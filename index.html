@@ -1,49 +1,66 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historische Karte Posen 1907</title>
-    
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <style>
-        body { margin: 0; padding: 0; }
-        #map { width: 100vw; height: 100vh; }
-    </style>
-</head>
-<body>
+import time
+import pandas as pd
+from geopy.geocoders import Nominatim
+from geopy.extra.rate_limiter import RateLimiter
 
-    <div id="map"></div>
+# 1. Dateipfade festlegen
+EINGABE_CSV = "restaurants_1896.csv"  # Name deiner Eingabedatei
+AUSGABE_CSV = "restaurants_1896_geocoded.csv"
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // 1. Karte auf Posen zentrieren
-        const map = L.map('map').setView([52.4086, 16.9342], 13);
+# 2. CSV einlesen (trennt nach Komma oder Semikolon automatisch)
+df = pd.read_csv(EINGABE_CSV, sep=None, engine="python")
 
-        // 2. OpenStreetMap Hintergrundkarte
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+# 3. Geocoder initialisieren (Einen eigenen user_agent wählen!)
+geolocator = Nominatim(user_agent="posen_historical_mapping_project_v1")
 
-        // 3. Historische Karte (jetzt auf .jpg angepasst)
-        const posen1907 = L.tileLayer('./{z}/{x}/{y}.jpg', {
-            minZoom: 12,
-            maxZoom: 15,
-            maxNativeZoom: 15,
-            tms: false,        // Falls die Kacheln an falschen Orten liegen, probiere hier true aus
-            opacity: 0.8,
-            attribution: 'Historische Karte Posen 1907'
-        }).addTo(map);
+# RateLimiter verhindert, dass Nominatim deine IP wegen zu vieler Anfragen blockiert (min 1 Sekunde Pause)
+geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1.0)
 
-        // 4. Ebenen-Steuerung (Oben rechts)
-        const overlayMaps = {
-            "Posen 1907": posen1907
-        };
-        L.control.layers(null, overlayMaps).addTo(map);
-    </script>
-</body>
-</html>
+
+# 4. Such-Adresse vorbereiten (Fügt "Poznań, Poland" an, falls nicht vorhanden)
+def prepare_address(raw_address):
+    if pd.isna(raw_address) or not str(raw_address).strip():
+        return None
+    addr = str(raw_address).strip()
+    if "Poznań" not in addr and "Poznan" not in addr:
+        addr += ", Poznań, Poland"
+    return addr
+
+
+print("Starte Geocoding...")
+
+
+# 5. Geocoding-Funktion für jede Zeile
+def get_coordinates(row):
+    # Falls bereits Koordinaten vorhanden sind, überspringen
+    if pd.notna(row.get("lat")) and pd.notna(row.get("lng")):
+        return row.get("lat"), row.get("lng")
+
+    address = prepare_address(row.get("Polish address"))
+    if not address:
+        print(f"[-] Keine Adresse für: {row.get('name')}")
+        return None, None
+
+    try:
+        location = geocode(address)
+        if location:
+            print(
+                f"[✓] Gefunden: {row.get('name')} ({address}) -> {location.latitude}, {location.longitude}"
+            )
+            return location.latitude, location.longitude
+        else:
+            print(f"[x] Nicht gefunden: {address}")
+            return None, None
+    except Exception as e:
+        print(f"[!] Fehler bei {address}: {e}")
+        return None, None
+
+
+# 6. Koordinaten abrufen und Spalten befüllen
+coords = df.apply(get_coordinates, axis=1)
+df["lat"] = [c[0] for c in coords]
+df["lng"] = [c[1] for c in coords]
+
+# 7. Ergebnis als neue CSV speichern
+df.to_csv(AUSGABE_CSV, index=False, encoding="utf-8")
+print(f"\nFertig! Die geocodierte Datei wurde als '{AUSGABE_CSV}' gespeichert.")
