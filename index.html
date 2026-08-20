@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historische Karte Posen 1907 (Zoom 12-15)</title>
+    <title>Historische Karte Posen 1907</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -20,22 +20,21 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 1. Karte initialisieren (Zentriert auf Posen)
-        const map = L.map('map').setView([52.4086, 16.9342], 14);
+        // 1. Karte auf Posen zentrieren
+        const map = L.map('map').setView([52.4086, 16.9342], 13);
 
-        // 2. OpenStreetMap als Hintergrundkarte
-        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // 2. OpenStreetMap Hintergrundkarte
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // 3. Deine historischen Kacheln (Begrenzt auf minZoom 12 und maxZoom 15)
-        // Passe den Pfad an, falls die Ordner z. B. im Unterordner 'tiles' liegen: './tiles/{z}/{x}/{y}.png'
-        const posen1907 = L.tileLayer('./{z}/{x}/{y}.png', {
+        // 3. Historische Karte (jetzt auf .jpg angepasst)
+        const posen1907 = L.tileLayer('./{z}/{x}/{y}.jpg', {
             minZoom: 12,
-            maxZoom: 15,        // Maximal verfügbarer Zoom auf GitHub
-            maxNativeZoom: 15,  // Skaliert Zoom 15 hoch, wenn der Nutzer tiefer reinzoomt
-            tms: false,
+            maxZoom: 15,
+            maxNativeZoom: 15,
+            tms: false,        // Falls die Kacheln an falschen Orten liegen, probiere hier true aus
             opacity: 0.8,
             attribution: 'Historische Karte Posen 1907'
         }).addTo(map);
