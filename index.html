@@ -1,66 +1,123 @@
-import time
-import pandas as pd
-from geopy.geocoders import Nominatim
-from geopy.extra.rate_limiter import RateLimiter
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historische Karte & Gastronomie Posen</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { width: 100vw; height: 100vh; }
 
-# 1. Dateipfade festlegen
-EINGABE_CSV = "restaurants_1896.csv"  # Name deiner Eingabedatei
-AUSGABE_CSV = "restaurants_1896_geocoded.csv"
+        /* Removes the whitish paper background from scanned map tiles */
+        .multiply-effect {
+            mix-blend-mode: multiply;
+        }
 
-# 2. CSV einlesen (trennt nach Komma oder Semikolon automatisch)
-df = pd.read_csv(EINGABE_CSV, sep=None, engine="python")
+        /* Custom Popup Formatting */
+        .leaflet-popup-content h3 {
+            margin: 0 0 5px 0;
+            color: #2c3e50;
+        }
+        .leaflet-popup-content p {
+            margin: 3px 0;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
 
-# 3. Geocoder initialisieren (Einen eigenen user_agent wählen!)
-geolocator = Nominatim(user_agent="posen_historical_mapping_project_v1")
+    <div id="map"></div>
 
-# RateLimiter verhindert, dass Nominatim deine IP wegen zu vieler Anfragen blockiert (min 1 Sekunde Pause)
-geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1.0)
+    <!-- Leaflet JS & PapaParse (for reading CSVs) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
+    <script>
+        // 1. Initialize Map: Zoom level 15 (more zoomed in) & strictly capped at maxZoom 18
+        const map = L.map('map', {
+            center: [52.4086, 16.9342],
+            zoom: 15,
+            maxZoom: 18
+        });
 
-# 4. Such-Adresse vorbereiten (Fügt "Poznań, Poland" an, falls nicht vorhanden)
-def prepare_address(raw_address):
-    if pd.isna(raw_address) or not str(raw_address).strip():
-        return None
-    addr = str(raw_address).strip()
-    if "Poznań" not in addr and "Poznan" not in addr:
-        addr += ", Poznań, Poland"
-    return addr
+        // 2. OpenStreetMap Base Layer
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
 
+        // 3. Historical Map Layer (Folders 12 to 18)
+        const posen1907 = L.tileLayer('./{z}/{x}/{y}.jpg', {
+            minZoom: 12,
+            maxZoom: 18,
+            maxNativeZoom: 18,
+            tms: false,
+            className: 'multiply-effect', // Eliminates white background
+            attribution: 'Historische Karte Posen'
+        }).addTo(map);
 
-print("Starte Geocoding...")
+        // 4. Layer Groups for CSV Restaurants
+        const layer1896 = L.layerGroup().addTo(map);
+        const layer1914 = L.layerGroup().addTo(map);
 
+        // Helper function to load and parse CSV files
+        function loadCSVLayer(filePath, targetLayer, markerColor) {
+            Papa.parse(filePath, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    results.data.forEach(row => {
+                        const lat = parseFloat(row.lat);
+                        const lng = parseFloat(row.lng);
 
-# 5. Geocoding-Funktion für jede Zeile
-def get_coordinates(row):
-    # Falls bereits Koordinaten vorhanden sind, überspringen
-    if pd.notna(row.get("lat")) and pd.notna(row.get("lng")):
-        return row.get("lat"), row.get("lng")
+                        // Only add marker if valid coordinates exist
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                            const popupContent = `
+                                <div>
+                                    <h3>${row.name || 'Unbenannt'}</h3>
+                                    <p><strong>Typ:</strong> ${row.type || 'N/A'}</p>
+                                    <p><strong>Adresse (DE):</strong> ${row["German address"] || 'N/A'}</p>
+                                    <p><strong>Adresse (PL):</strong> ${row["Polish address"] || 'N/A'}</p>
+                                    <p><strong>Jahr:</strong> ${row.year || 'N/A'}</p>
+                                </div>
+                            `;
 
-    address = prepare_address(row.get("Polish address"))
-    if not address:
-        print(f"[-] Keine Adresse für: {row.get('name')}")
-        return None, None
+                            // Create point marker
+                            L.circleMarker([lat, lng], {
+                                radius: 6,
+                                fillColor: markerColor,
+                                color: "#000",
+                                weight: 1,
+                                opacity: 1,
+                                fillOpacity: 0.8
+                            }).bindPopup(popupContent).addTo(targetLayer);
+                        }
+                    });
+                }
+            });
+        }
 
-    try:
-        location = geocode(address)
-        if location:
-            print(
-                f"[✓] Gefunden: {row.get('name')} ({address}) -> {location.latitude}, {location.longitude}"
-            )
-            return location.latitude, location.longitude
-        else:
-            print(f"[x] Nicht gefunden: {address}")
-            return None, None
-    except Exception as e:
-        print(f"[!] Fehler bei {address}: {e}")
-        return None, None
+        // Load CSV datasets (Ensure files exist in your repository root)
+        loadCSVLayer('./restaurants_1896.csv', layer1896, '#e74c3c'); // Red markers for 1896
+        loadCSVLayer('./restaurants_1914.csv', layer1914, '#2ecc71'); // Green markers for 1914
 
+        // 5. Layer Control Panel (Top Right)
+        const baseMaps = {
+            "OpenStreetMap": osm
+        };
 
-# 6. Koordinaten abrufen und Spalten befüllen
-coords = df.apply(get_coordinates, axis=1)
-df["lat"] = [c[0] for c in coords]
-df["lng"] = [c[1] for c in coords]
+        const overlayMaps = {
+            "Historische Karte (1907)": posen1907,
+            "Gastronomie 1896": layer1896,
+            "Gastronomie 1914": layer1914
+        };
 
-# 7. Ergebnis als neue CSV speichern
-df.to_csv(AUSGABE_CSV, index=False, encoding="utf-8")
-print(f"\nFertig! Die geocodierte Datei wurde als '{AUSGABE_CSV}' gespeichert.")
+        L.control.layers(baseMaps, overlayMaps).addTo(map);
+    </script>
+</body>
+</html>
