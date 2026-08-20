@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historische Karte Posen 1907</title>
+    <title>Historische Karte Posen 1907 (Zoom 12-15)</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -29,17 +29,18 @@
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // 3. Deine historischen Kacheln aus den Ordnern 12-18
-        // Pfad anpassen, falls die Ordner z.B. im Unterordner 'tiles' liegen: './tiles/{z}/{x}/{y}.png'
+        // 3. Deine historischen Kacheln (Begrenzt auf minZoom 12 und maxZoom 15)
+        // Passe den Pfad an, falls die Ordner z. B. im Unterordner 'tiles' liegen: './tiles/{z}/{x}/{y}.png'
         const posen1907 = L.tileLayer('./{z}/{x}/{y}.png', {
             minZoom: 12,
-            maxZoom: 18,
-            tms: false,        // Bei QGIS XYZ-Tiles standardmäßig false
-            opacity: 0.8,      // Transparenz (0.0 bis 1.0) zum Überlagern
+            maxZoom: 15,        // Maximal verfügbarer Zoom auf GitHub
+            maxNativeZoom: 15,  // Skaliert Zoom 15 hoch, wenn der Nutzer tiefer reinzoomt
+            tms: false,
+            opacity: 0.8,
             attribution: 'Historische Karte Posen 1907'
         }).addTo(map);
 
-        // 4. Ebenen-Steuerung (Ein-/Ausblenden oben rechts)
+        // 4. Ebenen-Steuerung (Oben rechts)
         const overlayMaps = {
             "Posen 1907": posen1907
         };
