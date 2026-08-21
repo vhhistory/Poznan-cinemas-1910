@@ -1,7 +1,7 @@
 # Kinos in Posen vor dem Ersten Weltkrieg
 
 Empfohlene Zitation:
-Hoyer, Vincent: Kinos in Posen vor dem Ersten Weltkrieg. Interaktive Karte. Online unter: https://[username].github.io/[repo-name] (abgerufen am DD.MM.YYYY).
+Hoyer, Vincent: Kinos in Posen vor dem Ersten Weltkrieg. Interaktive Karte. Online unter: https://vhhistory.github.io/Poznan-cinemas-1910/ (abgerufen am DD.MM.YYYY).
 
 Quellen: 
 Adressbuch der Residenzstadt Posen. 1914, Posen 1914.
