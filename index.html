@@ -124,12 +124,13 @@
         }).addTo(map);
 
         // 3. Historische Karte (100% deckend / keine Karte darunter sichtbar)
-        const posen1907 = L.tileLayer('./{z}/{x}/{y}.jpg', {
+        const posen1910 = L.tileLayer('./{z}/{x}/{y}.jpg', {
             minZoom: 12,
             maxZoom: 17,
             maxNativeZoom: 17,
             tms: false,
-            opacity: 1.0,
+            opacity: 0.95,
+            className: 'multiply-effect',
             attribution: 'Historische Karte Posen'
         }).addTo(map);
 
@@ -239,7 +240,7 @@
         };
 
         const overlayMaps = {
-            "Historische Karte (1907)": posen1907,
+            "Historische Karte (1910)": posen1910,
             "Kinos": layerKinos
         };
 
