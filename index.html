@@ -22,14 +22,23 @@
         }
         /* Styling für die Kinos-Kartenlabels */
         .kino-label {
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.5); /* Transparenterer Hintergrund (0.5) */
             border: 1px solid #2c3e50;
             color: #2c3e50;
             font-weight: bold;
             font-size: 11px;
             padding: 2px 6px;
             border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        
+        /* Entfernt den kleinen Verbindungs-Pfeil/Spitze von Leaflet */
+        .leaflet-tooltip-right::before,
+        .leaflet-tooltip-left::before,
+        .leaflet-tooltip-top::before,
+        .leaflet-tooltip-bottom::before {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
