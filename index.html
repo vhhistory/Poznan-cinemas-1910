@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historische Karte & Gastronomie Posen</title>
+    <title>Historische Karte & Gastronomie Posen 1896</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -12,12 +12,12 @@
         body { margin: 0; padding: 0; }
         #map { width: 100vw; height: 100vh; }
 
-        /* Removes the whitish paper background from scanned map tiles */
+        /* Entfernt den weißlichen Hintergrund der gescannten Karte */
         .multiply-effect {
             mix-blend-mode: multiply;
         }
 
-        /* Custom Popup Formatting */
+        /* Schönere Popups */
         .leaflet-popup-content h3 {
             margin: 0 0 5px 0;
             color: #2c3e50;
@@ -32,89 +32,84 @@
 
     <div id="map"></div>
 
-    <!-- Leaflet JS & PapaParse (for reading CSVs) -->
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <script>
-        // 1. Initialize Map: Zoom level 15 (more zoomed in) & strictly capped at maxZoom 18
+        // 1. Karte initialisieren (Start-Zoom 15, Max-Zoom 18)
         const map = L.map('map', {
             center: [52.4086, 16.9342],
             zoom: 15,
             maxZoom: 18
         });
 
-        // 2. OpenStreetMap Base Layer
+        // 2. OpenStreetMap Hintergrundkarte
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 18,
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // 3. Historical Map Layer (Folders 12 to 18)
+        // 3. Historische Karte Posen (Ordner 12 bis 18)
         const posen1907 = L.tileLayer('./{z}/{x}/{y}.jpg', {
             minZoom: 12,
             maxZoom: 18,
-            maxNativeZoom: 18,
+            maxNativeZoom: 17,
             tms: false,
-            className: 'multiply-effect', // Eliminates white background
+            className: 'multiply-effect',
             attribution: 'Historische Karte Posen'
         }).addTo(map);
 
-        // 4. Layer Groups for CSV Restaurants
+        // 4. Layer Group für die Restaurateure 1896
         const layer1896 = L.layerGroup().addTo(map);
-        const layer1914 = L.layerGroup().addTo(map);
 
-        // Helper function to load and parse CSV files
-        function loadCSVLayer(filePath, targetLayer, markerColor) {
-            Papa.parse(filePath, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    results.data.forEach(row => {
-                        const lat = parseFloat(row.lat);
-                        const lng = parseFloat(row.lng);
-
-                        // Only add marker if valid coordinates exist
-                        if (!isNaN(lat) && !isNaN(lng)) {
-                            const popupContent = `
-                                <div>
-                                    <h3>${row.name || 'Unbenannt'}</h3>
-                                    <p><strong>Typ:</strong> ${row.type || 'N/A'}</p>
-                                    <p><strong>Adresse (DE):</strong> ${row["German address"] || 'N/A'}</p>
-                                    <p><strong>Adresse (PL):</strong> ${row["Polish address"] || 'N/A'}</p>
-                                    <p><strong>Jahr:</strong> ${row.year || 'N/A'}</p>
-                                </div>
-                            `;
-
-                            // Create point marker
-                            L.circleMarker([lat, lng], {
-                                radius: 6,
-                                fillColor: markerColor,
-                                color: "#000",
-                                weight: 1,
-                                opacity: 1,
-                                fillOpacity: 0.8
-                            }).bindPopup(popupContent).addTo(targetLayer);
-                        }
-                    });
+        // 5. GeoJSON-Datei laden und verarbeiten
+        fetch('./1896-Restaurateure.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("HTTP Fehler " + response.status);
                 }
+                return response.json();
+            })
+            .then(data => {
+                L.geoJSON(data, {
+                    pointToLayer: function (feature, latlng) {
+                        // Roter Kreis-Marker für jeden Gastronomie-Punkt
+                        return L.circleMarker(latlng, {
+                            radius: 7,
+                            fillColor: "#e74c3c",
+                            color: "#ffffff",
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.9
+                        });
+                    },
+                    onEachFeature: function (feature, layer) {
+                        // Liest die Daten aus deiner Google-KML/GeoJSON aus
+                        const props = feature.properties || {};
+                        const name = props.name || 'Unbenannter Ort';
+                        const description = props.description || 'Keine Beschreibung vorhanden';
+
+                        layer.bindPopup(`
+                            <div>
+                                <h3>${name}</h3>
+                                <div>${description}</div>
+                            </div>
+                        `);
+                    }
+                }).addTo(layer1896);
+            })
+            .catch(error => {
+                console.error("Fehler beim Laden der GeoJSON-Datei:", error);
             });
-        }
 
-        // Load CSV datasets (Ensure files exist in your repository root)
-        loadCSVLayer('./restaurants_1896.csv', layer1896, '#e74c3c'); // Red markers for 1896
-        loadCSVLayer('./restaurants_1914.csv', layer1914, '#2ecc71'); // Green markers for 1914
-
-        // 5. Layer Control Panel (Top Right)
+        // 6. Ebenen-Steuerung oben rechts
         const baseMaps = {
             "OpenStreetMap": osm
         };
 
         const overlayMaps = {
             "Historische Karte (1907)": posen1907,
-            "Gastronomie 1896": layer1896,
-            "Gastronomie 1914": layer1914
+            "Restaurateure 1896": layer1896
         };
 
         L.control.layers(baseMaps, overlayMaps).addTo(map);
