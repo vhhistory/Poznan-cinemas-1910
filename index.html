@@ -12,7 +12,6 @@
         body { margin: 0; padding: 0; }
         #map { width: 100vw; height: 100vh; }
 
-        /* Schönere Popups */
         .leaflet-popup-content h3 {
             margin: 0 0 5px 0;
             color: #2c3e50;
@@ -32,82 +31,99 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <script>
-        // 1. Karte initialisieren (Start-Zoom 15, Max-Zoom 18)
+        // 1. Karte initialisieren
         const map = L.map('map', {
             center: [52.4086, 16.9342],
             zoom: 15,
             maxZoom: 17
         });
 
-        // 2. OpenStreetMap Hintergrundkarte (bleibt als Basis)
+        // 2. OpenStreetMap
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 18,
+            maxZoom: 17,
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // 3. Historische Karte Posen (Vollständig deckend / 0% Transparenz)
+        // 3. Historische Karte (100% deckend / keine Karte darunter sichtbar)
         const posen1907 = L.tileLayer('./{z}/{x}/{y}.jpg', {
             minZoom: 12,
             maxZoom: 17,
             maxNativeZoom: 17,
             tms: false,
-            opacity: 1.0, // 1.0 = 100% deckend (keine Karte darunter sichtbar)
+            opacity: 1.0,
             attribution: 'Historische Karte Posen'
         }).addTo(map);
 
-        // 4. Layer Group für die Kinos
+        // 4. Layer Group für Kinos
         const layerKinos = L.layerGroup().addTo(map);
 
-        // 5. CSV-Datei einlesen und Kinos auf der Karte platzieren
+        // 5. CSV flexibel einlesen
         Papa.parse('./Kinos-Hendrykowska-KMP-2006-1.xlsx.csv', {
             download: true,
             header: true,
             skipEmptyLines: true,
             complete: function(results) {
+                console.log("Gefundene Spaltenköpfe in deiner CSV:", results.meta.fields);
                 let loadedCount = 0;
 
-                results.data.forEach(row => {
-                    // Kommas in Punkten umwandeln, falls Koordinaten im Format "52,408" vorliegen
-                    const latStr = row.lat ? row.lat.replace(',', '.') : '';
-                    const lngStr = row.lng ? row.lng.replace(',', '.') : '';
-                    
-                    const lat = parseFloat(latStr);
-                    const lng = parseFloat(lngStr);
+                results.data.forEach((row) => {
+                    // Werte aus allen möglichen Schreibweisen extrahieren
+                    let latRaw = null;
+                    let lngRaw = null;
 
-                    // Nur Marker setzen, wenn valide Koordinaten vorhanden sind
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                        loadedCount++;
+                    // Suche dynamisch nach den Werten für lat/lng in den Objekteigenschaften
+                    Object.keys(row).forEach(key => {
+                        const cleanKey = key.trim().toLowerCase();
+                        if (cleanKey === 'lat' || cleanKey === 'latitude' || cleanKey.includes('lat')) {
+                            latRaw = row[key];
+                        }
+                        if (cleanKey === 'lng' || cleanKey === 'lng ' || cleanKey === 'long' || cleanKey === 'longitude' || cleanKey.includes('lng')) {
+                            lngRaw = row[key];
+                        }
+                    });
 
-                        const popupContent = `
-                            <div>
-                                <h3>${row.name || 'Kino'}</h3>
-                                <p><strong>Typ:</strong> ${row.type || 'Kino'}</p>
-                                <p><strong>Adresse (DE):</strong> ${row["German address"] || 'N/A'}</p>
-                                <p><strong>Adresse (PL):</strong> ${row["Polish address"] || 'N/A'}</p>
-                                <p><strong>Jahr:</strong> ${row.year || 'N/A'}</p>
-                            </div>
-                        `;
+                    if (latRaw && lngRaw) {
+                        let lat = parseFloat(String(latRaw).replace(',', '.').trim());
+                        let lng = parseFloat(String(lngRaw).replace(',', '.').trim());
 
-                        // Blauer Kreis-Marker für jedes Kino
-                        L.circleMarker([lat, lng], {
-                            radius: 7,
-                            fillColor: "#2980b9",
-                            color: "#ffffff",
-                            weight: 2,
-                            opacity: 1,
-                            fillOpacity: 0.9
-                        }).bindPopup(popupContent).addTo(layerKinos);
+                        if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+                            loadedCount++;
+
+                            // Namens- und Adressfelder flexibel auslesen
+                            const name = row.name || row.Name || Object.values(row)[0] || 'Kino';
+                            const gerAddr = row["German address"] || row["German Address"] || '';
+                            const polAddr = row["Polish address"] || row["Polish Address"] || '';
+                            const year = row.year || row.Year || '';
+
+                            const popupContent = `
+                                <div>
+                                    <h3>${name}</h3>
+                                    ${gerAddr ? `<p><strong>Adresse (DE):</strong> ${gerAddr}</p>` : ''}
+                                    ${polAddr ? `<p><strong>Adresse (PL):</strong> ${polAddr}</p>` : ''}
+                                    ${year ? `<p><strong>Jahr:</strong> ${year}</p>` : ''}
+                                </div>
+                            `;
+
+                            L.circleMarker([lat, lng], {
+                                radius: 8,
+                                fillColor: "#e74c3c", // Roter Punkt
+                                color: "#ffffff",
+                                weight: 2,
+                                opacity: 1,
+                                fillOpacity: 0.9
+                            }).bindPopup(popupContent).addTo(layerKinos);
+                        }
                     }
                 });
 
                 console.log(`Erfolgreich ${loadedCount} Kinos auf der Karte platziert.`);
             },
             error: function(err) {
-                console.error("Fehler beim Lesen der CSV:", err);
+                console.error("Fehler beim Laden der CSV:", err);
             }
         });
 
-        // 6. Ebenen-Steuerung oben rechts
+        // 6. Ebenen-Steuerung
         const baseMaps = {
             "OpenStreetMap": osm
         };
