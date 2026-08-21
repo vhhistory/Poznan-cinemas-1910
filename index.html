@@ -41,10 +41,7 @@
         .leaflet-tooltip-bottom::before {
             display: none !important;
 }
-        /* Blendet das Weiß des historischen Scans aus */
-.multiply-effect {
-    mix-blend-mode: multiply;
-}
+
         /* Feste Infobox oben links auf der Karte */
 .map-title-box {
     position: absolute;
@@ -133,8 +130,7 @@
             maxZoom: 17,
             maxNativeZoom: 17,
             tms: false,
-            opacity: 0.99,
-            className: 'multiply-effect',
+            opacity: 1.0,
             attribution: 'Historische Karte Posen'
         }).addTo(map);
 
