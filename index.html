@@ -22,23 +22,25 @@
         }
         /* Styling für die Kinos-Kartenlabels */
         .kino-label {
-            background-color: rgba(255, 255, 255, 0.6);
+            background-color: rgba(255, 255, 255, 0.9) !important; /* Fast deckend / gut lesbar */
             border: 1px solid #2c3e50;
             color: #2c3e50;
             font-weight: bold;
-            font-size: 10px;          /* Leicht verkleinert für bessere Lesbarkeit bei Dichte */
-            padding: 1px 4px;
-            border-radius: 3px;
+            font-size: 11px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.25);
             white-space: nowrap;
-            pointer-events: none;      /* Verhindert, dass Labels Klicks auf darunter liegende Punkte blockieren */
+            pointer-events: none;
         }
         
-        /* Entfernt die Pfeile für alle Richtungen */
+        /* Entfernt alle Pfeile */
         .leaflet-tooltip-right::before,
         .leaflet-tooltip-left::before,
         .leaflet-tooltip-top::before,
         .leaflet-tooltip-bottom::before {
             display: none !important;
+}
         }
         }
     </style>
@@ -125,8 +127,21 @@
                                 </div>
                             `;
 
-                            // Label-Text mit Name und Jahr (z. B. "Urania (1912)")
+                           // Label-Text mit Name und Jahr
                             const labelText = year ? `${name} (${year})` : name;
+                            
+                            // Standard-Ausrichtung nach rechts mit 12px Abstand zum Punkt
+                            let labelDirection = 'right';
+                            let labelOffset = [12, 0];
+                            
+                            // Ausnahmen für eng beieinander liegende Kinos, damit sie sich nicht verdecken:
+                            if (name.includes("Urania")) {
+                                labelDirection = 'top';      // Schiebt das Label über den Punkt
+                                labelOffset = [0, -10];
+                            } else if (name.includes("Optyczna")) {
+                                labelDirection = 'bottom';   // Schiebt das Label unter den Punkt
+                                labelOffset = [0, 10];
+                            }
                             
                             L.circleMarker([lat, lng], {
                                 radius: 8,
@@ -139,8 +154,8 @@
                             .bindPopup(popupContent)
                             .bindTooltip(labelText, {
                                 permanent: true,
-                                direction: 'auto',  // Weicht automatisch aus (oben/unten/rechts/links), um Überlappungen zu vermeiden
-                                offset: [0, 0],
+                                direction: labelDirection,
+                                offset: labelOffset,
                                 className: 'kino-label'
                             })
                             .addTo(layerKinos);
