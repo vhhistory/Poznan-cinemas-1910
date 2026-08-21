@@ -1,13 +1,14 @@
-Name,Bezeichnung,Adresse,unnamed (1),unnamed (2),Adresse Poznan,unnamed (3),unnamed (4),unnamed (5),Quelle,Aktenzeichen,Laufzeit
-Teatr Apollo, ab 1910 Colloseum,1908-1912 Feliks Heidrich, Hieronim Bontke, Franciszek Dymarski,,,Św. Marcin 65,Św. Marcin 65, Poznań,1908,,,,,
-Park Promenadowy,Leon Mettler,,,Stanisława Moniuszki,Stanisława Moniuszki, Poznań,1903,,,,,
-Palast-Theater,,,,Plac Wolnosci 8,Plac Wolności 8, Poznań,1907,,,,,
-Residenz-Theater,,,,27 Grudnia,27 Grudnia, Poznań,1907,,,,,
-Tonbild,zuerst Wrocławska,,,27 Grudnia 14,27 Grudnia 14, Poznań,1908,,,,,
-Royal Bioskop,zuerst Wrocławska,,,pl. Wiosny Ludów,pl. Wiosny Ludów, Poznań,1908,,,,,
-Grand-Kinematograf,,,,Wielka ,Wielka, Poznań,1908,,,,,
-Welttheater,,,,Św. Marcin 43,Św. Marcin 43, Poznań,1909,,,,,
-Optyczna Panorama,,,,Św. Marcin 45,Św. Marcin 45, Poznań,schon länger,,,,,
-Urania,,,,Róg Św. Marcin Ratajczaka,Róg Św. Marcin Ratajczaka, Poznań,1909,,,,,
-Unia,,,,Św. Marcin 13,Św. Marcin 13, Poznań,1909,,Bildmaterial,,,
-Lichtbild-Theater?,,,,Św. Marcin 23,Św. Marcin 23, Poznań,1909,,,,,
+name,type,German address,Polish address,city,year, lat, lng
+Teatr Apollo,ab 1910 Colosseum,,Św. Marcin 65,,1908,52.4068, 16.92142
+Park Promenadowy,,,Stanisława Moniuszki,,1903,52.41338, 16.91833
+Palast-Theater,,,Plac Wolności 8,,1907,52.40768, 16.92623
+Residenz-Theater,,,27 Grudnia,,1907,52.40812, 16.92347
+Tonbild,zuerst in ul. Wrocławska,,27 Grudnia 14,,1908,52.40846, 16.92202
+Royal Bioskop,zuerst in ul. Wrocławska,,pl. Wiosny Ludów,,1908,52.40547, 16.93022
+Grand-Kinematograf,,,Wielka 21,,1908,52.40845, 16.93667
+Welttheater,,,Św. Marcin 43,,1909,52.40605, 16.92354
+Optyczna Panorama,,,Św. Marcin 45,,?,52.40625, 16.92354
+Urania,,,Róg Św. Marcin Ratajczaka,,1909,52.40643, 16.92517
+Unia,,,Św. Marcin 13,,1909,52.4055, 16.92878
+Lichtbild-Theater,,,Św. Marcin 23,,1909,52.40597, 16.92662
+
