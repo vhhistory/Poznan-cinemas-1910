@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historische Karte & Gastronomie Posen 1896</title>
+    <title>Historische Karte & Kinos Posen</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -11,11 +11,6 @@
     <style>
         body { margin: 0; padding: 0; }
         #map { width: 100vw; height: 100vh; }
-
-        /* Entfernt den weißlichen Hintergrund der gescannten Karte */
-        .multiply-effect {
-            mix-blend-mode: multiply;
-        }
 
         /* Schönere Popups */
         .leaflet-popup-content h3 {
@@ -32,75 +27,85 @@
 
     <div id="map"></div>
 
-    <!-- Leaflet JS -->
+    <!-- Leaflet JS & PapaParse -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <script>
         // 1. Karte initialisieren (Start-Zoom 15, Max-Zoom 18)
         const map = L.map('map', {
             center: [52.4086, 16.9342],
             zoom: 15,
-            maxZoom: 18
+            maxZoom: 17
         });
 
-        // 2. OpenStreetMap Hintergrundkarte
+        // 2. OpenStreetMap Hintergrundkarte (bleibt als Basis)
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 18,
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // 3. Historische Karte Posen (Ordner 12 bis 18)
+        // 3. Historische Karte Posen (Vollständig deckend / 0% Transparenz)
         const posen1907 = L.tileLayer('./{z}/{x}/{y}.jpg', {
             minZoom: 12,
-            maxZoom: 18,
+            maxZoom: 17,
             maxNativeZoom: 17,
             tms: false,
-            className: 'multiply-effect',
+            opacity: 1.0, // 1.0 = 100% deckend (keine Karte darunter sichtbar)
             attribution: 'Historische Karte Posen'
         }).addTo(map);
 
-        // 4. Layer Group für die Restaurateure 1896
-        const layer1896 = L.layerGroup().addTo(map);
+        // 4. Layer Group für die Kinos
+        const layerKinos = L.layerGroup().addTo(map);
 
-        // 5. GeoJSON-Datei laden und verarbeiten
-        fetch('./1896-Restaurateure.json')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("HTTP Fehler " + response.status);
-                }
-                return response.json();
-            })
-            .then(data => {
-                L.geoJSON(data, {
-                    pointToLayer: function (feature, latlng) {
-                        // Roter Kreis-Marker für jeden Gastronomie-Punkt
-                        return L.circleMarker(latlng, {
+        // 5. CSV-Datei einlesen und Kinos auf der Karte platzieren
+        Papa.parse('./Kinos-Hendrykowska-KMP-2006-1.xlsx.csv', {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                let loadedCount = 0;
+
+                results.data.forEach(row => {
+                    // Kommas in Punkten umwandeln, falls Koordinaten im Format "52,408" vorliegen
+                    const latStr = row.lat ? row.lat.replace(',', '.') : '';
+                    const lngStr = row.lng ? row.lng.replace(',', '.') : '';
+                    
+                    const lat = parseFloat(latStr);
+                    const lng = parseFloat(lngStr);
+
+                    // Nur Marker setzen, wenn valide Koordinaten vorhanden sind
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        loadedCount++;
+
+                        const popupContent = `
+                            <div>
+                                <h3>${row.name || 'Kino'}</h3>
+                                <p><strong>Typ:</strong> ${row.type || 'Kino'}</p>
+                                <p><strong>Adresse (DE):</strong> ${row["German address"] || 'N/A'}</p>
+                                <p><strong>Adresse (PL):</strong> ${row["Polish address"] || 'N/A'}</p>
+                                <p><strong>Jahr:</strong> ${row.year || 'N/A'}</p>
+                            </div>
+                        `;
+
+                        // Blauer Kreis-Marker für jedes Kino
+                        L.circleMarker([lat, lng], {
                             radius: 7,
-                            fillColor: "#e74c3c",
+                            fillColor: "#2980b9",
                             color: "#ffffff",
                             weight: 2,
                             opacity: 1,
                             fillOpacity: 0.9
-                        });
-                    },
-                    onEachFeature: function (feature, layer) {
-                        // Liest die Daten aus deiner Google-KML/GeoJSON aus
-                        const props = feature.properties || {};
-                        const name = props.name || 'Unbenannter Ort';
-                        const description = props.description || 'Keine Beschreibung vorhanden';
-
-                        layer.bindPopup(`
-                            <div>
-                                <h3>${name}</h3>
-                                <div>${description}</div>
-                            </div>
-                        `);
+                        }).bindPopup(popupContent).addTo(layerKinos);
                     }
-                }).addTo(layer1896);
-            })
-            .catch(error => {
-                console.error("Fehler beim Laden der GeoJSON-Datei:", error);
-            });
+                });
+
+                console.log(`Erfolgreich ${loadedCount} Kinos auf der Karte platziert.`);
+            },
+            error: function(err) {
+                console.error("Fehler beim Lesen der CSV:", err);
+            }
+        });
 
         // 6. Ebenen-Steuerung oben rechts
         const baseMaps = {
@@ -109,7 +114,7 @@
 
         const overlayMaps = {
             "Historische Karte (1907)": posen1907,
-            "Restaurateure 1896": layer1896
+            "Kinos": layerKinos
         };
 
         L.control.layers(baseMaps, overlayMaps).addTo(map);
