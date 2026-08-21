@@ -110,8 +110,12 @@
         const map = L.map('map', {
             center: [52.4086, 16.9342],
             zoom: 15,
-            maxZoom: 17
+            maxZoom: 17,
+            zoomControl: false // Deaktiviert den Standard-Zoom oben links
         });
+        
+        // Positioniert den Zoom-Regler neu oben rechts
+        L.control.zoom({ position: 'topright' }).addTo(map);
 
         // 2. OpenStreetMap
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
