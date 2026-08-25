@@ -193,11 +193,13 @@
                     if (
                         nameLower.includes("tonbild") || 
                         nameLower.includes("optyczna panorama") || 
-                        nameLower.includes("unia") ||
-                        nameLower.includes("urania")
+                        nameLower.includes("unia")
                     ) {
                         labelDirection = 'left';
                         labelOffset = [-12, 0];
+                    } else if (nameLower.includes("urania")) {
+                        labelDirection = 'top';
+                        labelOffset = [0, -10];
                     }
 
                     // 4. Marker mit Popup und Label erstellen
